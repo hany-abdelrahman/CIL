@@ -31,7 +31,6 @@ X_trn(idx_trn) = X(idx_trn);  % add known training values
 
 X_tst = ones(size(X))*nil;
 X_tst(idx_tst) = X(idx_tst);  % add known training values
-adapter(X_trn, X_tst,99);
 
 
 % Predict the missing values here!
