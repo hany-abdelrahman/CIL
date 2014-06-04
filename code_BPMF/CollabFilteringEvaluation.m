@@ -34,7 +34,7 @@ X_tst(idx_tst) = X(idx_tst);  % add known training values
 
 
 % Predict the missing values here!
-X_pred = PredictMissingValues(X_trn, nil);
+X_pred = PredictMissingValues(X_trn, X_tst, nil);
 
 % Compute MSE
 mse = sqrt(mean((X_tst(X_tst ~= nil) - X_pred(X_tst ~= nil)).^2));  % error on known test values

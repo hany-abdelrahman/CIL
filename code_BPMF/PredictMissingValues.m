@@ -1,13 +1,20 @@
-function [res] = PredictMissingValues(train_data, nil)
-    val_data = train_data;  
+function [res] = PredictMissingValues(train_data, val_data, nil)
+    %val_data = train_data;
+    scaling_coeff = 5;
+    ind = train_data==nil;
+    train_data = (train_data + 10)./scaling_coeff;
+    train_data(ind) = nil;
+    ind = val_data==nil;
+    val_data = (val_data + 10)./scaling_coeff;
+    val_data(ind) = nil;
+    
     [a,b] = find(train_data~=nil);
     ind = sub2ind(size(train_data), a,b);
-    train_vec = [a b (train_data(ind)+10)./4];
+    train_vec = [a b train_data(ind)];
 
     [a,b] = find(val_data~=nil);
     ind = sub2ind(size(val_data), a,b);
-    probe_vec = [a b (val_data(ind)+10)./4];
-
+    probe_vec = [a b val_data(ind)];
     restart = 1;
     if restart==1 
       restart=0;
@@ -16,7 +23,7 @@ function [res] = PredictMissingValues(train_data, nil)
       momentum=0.8; 
 
       epoch=1; 
-      maxepoch=5; 
+      maxepoch=10; 
 
       mean_rating = mean(train_vec(:,3)); 
 
@@ -26,15 +33,15 @@ function [res] = PredictMissingValues(train_data, nil)
       numbatches= 9; % Number of batches  
       num_m = size(train_data,2);   % Number of movies 
       num_p = size(train_data,1);  % Number of users 
-      num_feat = 10; % Rank 10 decomposition 
+      num_feat = 3; % Rank 10 decomposition 
 
-      w1_M1     = 0.1*randn(num_m, num_feat); % Movie feature vectors
-      w1_P1     = 0.1*randn(num_p, num_feat); % User feature vecators
+      [U_init, V_init] = InitializeSVD(train_data, nil, num_feat);
+      w1_M1     = V_init';%0.1*randn(num_m, num_feat); % Movie feature vectors
+      w1_P1     = U_init; %0.1*randn(num_p, num_feat); % User feature vecators
       w1_M1_inc = zeros(num_m, num_feat);
       w1_P1_inc = zeros(num_p, num_feat);
 
     end
-
 
     for epoch = epoch:maxepoch
       rr = randperm(pairs_tr);
@@ -53,8 +60,7 @@ function [res] = PredictMissingValues(train_data, nil)
 
         %%%%%%%%%%%%%% Compute Predictions %%%%%%%%%%%%%%%%%
         pred_out = sum(w1_M1(aa_m,:).*w1_P1(aa_p,:),2);
-        f = sum( (pred_out - rating).^2 + ...
-            0.5*lambda*( sum( (w1_M1(aa_m,:).^2 + w1_P1(aa_p,:).^2),2)));
+        f = sum( (pred_out - rating).^2 + 0.5*lambda*( sum( (w1_M1(aa_m,:).^2 + w1_P1(aa_p,:).^2),2)));
 
         %%%%%%%%%%%%%% Compute Gradients %%%%%%%%%%%%%%%%%%%
         IO = repmat(2*(pred_out - rating),1,num_feat);
@@ -92,13 +98,15 @@ function [res] = PredictMissingValues(train_data, nil)
       rating = double(probe_vec(:,3));
 
       pred_out = sum(w1_M1(aa_m,:).*w1_P1(aa_p,:),2) + mean_rating;
-      ff = find(pred_out>5); pred_out(ff)=5; % Clip predictions 
+      ff = find(pred_out>scaling_coeff); pred_out(ff)=scaling_coeff; % Clip predictions 
       ff = find(pred_out<0); pred_out(ff)=0;
 
-      err_valid(epoch) = sqrt(mean((4*(pred_out- rating)).^2));
+      err_valid(epoch) = sqrt(mean((scaling_coeff*(pred_out- rating)).^2));
       fprintf(1, 'epoch %4i batch %4i Training RMSE %6.4f  Test RMSE %6.4f  \n', epoch, batch, err_train(epoch), err_valid(epoch));
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     end 
-    res = 4*((w1_P1*w1_M1') + mean_rating)-10;
+    res = scaling_coeff*((w1_P1*w1_M1') + mean_rating)-10;
+    res(find(res>9.5))=9.5;
+    res(find(res<-9.5))=-9.5;
 end
