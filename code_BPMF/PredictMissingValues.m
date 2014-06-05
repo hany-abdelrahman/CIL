@@ -20,7 +20,7 @@ function [res] = PredictMissingValues(train_data, val_data, nil)
       restart=0;
       epsilon=50; % Learning rate 
       lambda  = 0.01; % Regularization parameter 
-      momentum=0.8; 
+      momentum=0.0; 
 
       epoch=1; 
       maxepoch=10; 
@@ -59,7 +59,8 @@ function [res] = PredictMissingValues(train_data, val_data, nil)
         rating = rating-mean_rating; % Default prediction is the mean rating. 
 
         %%%%%%%%%%%%%% Compute Predictions %%%%%%%%%%%%%%%%%
-        pred_out = sum(w1_M1(aa_m,:).*w1_P1(aa_p,:),2);
+        %pred_out = sum(w1_M1(aa_m,:).*w1_P1(aa_p,:),2);
+        pred_out = Kernel(w1_M1(aa_m,:),w1_P1(aa_p,:));
         f = sum( (pred_out - rating).^2 + 0.5*lambda*( sum( (w1_M1(aa_m,:).^2 + w1_P1(aa_p,:).^2),2)));
 
         %%%%%%%%%%%%%% Compute Gradients %%%%%%%%%%%%%%%%%%%
