@@ -5,6 +5,7 @@ function [res] = PredictMissingValues(train_data, nil)
     n_samples = size(train_vec,2);
     n_users = size(train_data,1);
     n_movies = size(train_data,2);
+    train_vec = [a b train_data(ind)]';
 
     N_ITERATIONS = 2;
     
